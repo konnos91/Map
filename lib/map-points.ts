@@ -5,8 +5,6 @@ import { makeDocProperties } from "./map-utils";
 const SRC = "points";
 const LAYER = "points-layer";
 const LAYER_SELECTED = "points-selected";
-const LAYER_CLUSTERS = "clusters";
-const LAYER_CLUSTER_COUNT = "cluster-count";
 
 const CIRCLE_PAINT: maplibregl.CircleLayerSpecification["paint"] = {
   "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3, 6, 4, 10, 5],
@@ -57,60 +55,17 @@ export function ensureLayers(
     map.addSource(SRC, {
       type: "geojson",
       data: getCachedGeoJSON(pts),
-      cluster: true,
-      clusterMaxZoom: 8,
-      clusterRadius: 50,
-    });
-
-    map.addLayer({
-      id: LAYER_CLUSTERS,
-      type: "circle",
-      source: SRC,
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-color": [
-          "step",
-          ["get", "point_count"],
-          "#2563eb",
-          100,
-          "#1d4ed8",
-          1000,
-          "#1e3a8a",
-        ],
-        "circle-radius": [
-          "step",
-          ["get", "point_count"],
-          15,
-          100,
-          20,
-          1000,
-          25,
-        ],
-        "circle-stroke-color": "rgba(148,142,142,0.65)",
-        "circle-stroke-width": 1,
-        "circle-opacity": 0.9,
-      },
-    });
-
-    map.addLayer({
-      id: LAYER_CLUSTER_COUNT,
-      type: "symbol",
-      source: SRC,
-      filter: ["has", "point_count"],
-      layout: {
-        "text-field": "{point_count_abbreviated}",
-        "text-size": 11,
-      },
-      paint: {
-        "text-color": "#ffffff",
-      },
     });
 
     map.addLayer({
       id: LAYER,
       type: "circle",
       source: SRC,
-      filter: ["!", ["has", "point_count"]],
+      filter: [
+        ">=",
+        ["get", "hot"],
+        ["interpolate", ["linear"], ["zoom"], 2, 0.85, 6, 0.5, 10, 0.0],
+      ],
       paint: CIRCLE_PAINT,
     });
 
