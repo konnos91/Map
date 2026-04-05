@@ -1,10 +1,12 @@
 import maplibregl from "maplibre-gl";
 import type { WorldPoint, DocProperties } from "./map-constants";
-import { makeDocProperties, getMaxVisibleMarkers } from "./map-utils";
+import { makeDocProperties } from "./map-utils";
 
 const SRC = "points";
 const LAYER = "points-layer";
 const LAYER_SELECTED = "points-selected";
+const LAYER_CLUSTERS = "clusters";
+const LAYER_CLUSTER_COUNT = "cluster-count";
 
 const CIRCLE_PAINT: maplibregl.CircleLayerSpecification["paint"] = {
   "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 3, 6, 4, 10, 5],
@@ -25,12 +27,23 @@ const SELECTED_PAINT: maplibregl.CircleLayerSpecification["paint"] = {
 function toGeoJSON(pts: WorldPoint[]) {
   return {
     type: "FeatureCollection" as const,
-    features: pts.map((p, i) => ({
+    features: pts.map((p) => ({
       type: "Feature" as const,
       geometry: { type: "Point" as const, coordinates: [p.lng, p.lat] },
-      properties: { id: `doc-${p.idx}`, idx: p.idx, hot: p.hot, lng: p.lng, lat: p.lat, rank: i },
+      properties: { id: `doc-${p.idx}`, idx: p.idx, hot: p.hot, lng: p.lng, lat: p.lat },
     })),
   };
+}
+
+let cachedPts: WorldPoint[] | null = null;
+let cachedGeoJSON: ReturnType<typeof toGeoJSON> | null = null;
+
+function getCachedGeoJSON(pts: WorldPoint[]) {
+  if (pts !== cachedPts) {
+    cachedPts = pts;
+    cachedGeoJSON = toGeoJSON(pts);
+  }
+  return cachedGeoJSON!;
 }
 
 export function ensureLayers(
@@ -41,14 +54,65 @@ export function ensureLayers(
   if (!map.isStyleLoaded() || pts.length === 0) return;
 
   if (!map.getSource(SRC)) {
-    map.addSource(SRC, { type: "geojson", data: toGeoJSON(pts) });
+    map.addSource(SRC, {
+      type: "geojson",
+      data: getCachedGeoJSON(pts),
+      cluster: true,
+      clusterMaxZoom: 8,
+      clusterRadius: 50,
+    });
+
+    map.addLayer({
+      id: LAYER_CLUSTERS,
+      type: "circle",
+      source: SRC,
+      filter: ["has", "point_count"],
+      paint: {
+        "circle-color": [
+          "step",
+          ["get", "point_count"],
+          "#2563eb",
+          100,
+          "#1d4ed8",
+          1000,
+          "#1e3a8a",
+        ],
+        "circle-radius": [
+          "step",
+          ["get", "point_count"],
+          15,
+          100,
+          20,
+          1000,
+          25,
+        ],
+        "circle-stroke-color": "rgba(148,142,142,0.65)",
+        "circle-stroke-width": 1,
+        "circle-opacity": 0.9,
+      },
+    });
+
+    map.addLayer({
+      id: LAYER_CLUSTER_COUNT,
+      type: "symbol",
+      source: SRC,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": "{point_count_abbreviated}",
+        "text-size": 11,
+        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+      },
+      paint: {
+        "text-color": "#ffffff",
+      },
+    });
 
     map.addLayer({
       id: LAYER,
       type: "circle",
       source: SRC,
+      filter: ["!", ["has", "point_count"]],
       paint: CIRCLE_PAINT,
-      filter: ["<", ["get", "rank"], getMaxVisibleMarkers(map.getZoom())],
     });
 
     map.addLayer({
@@ -71,13 +135,8 @@ export function ensureLayers(
       map.getCanvas().style.cursor = "";
     });
   } else {
-    (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(toGeoJSON(pts));
+    (map.getSource(SRC) as maplibregl.GeoJSONSource).setData(getCachedGeoJSON(pts));
   }
-}
-
-export function syncFilter(map: maplibregl.Map) {
-  if (!map.getLayer(LAYER)) return;
-  map.setFilter(LAYER, ["<", ["get", "rank"], getMaxVisibleMarkers(map.getZoom())]);
 }
 
 export function syncSelection(map: maplibregl.Map, docId: string | undefined) {
