@@ -61,11 +61,6 @@ export function ensureLayers(
       id: LAYER,
       type: "circle",
       source: SRC,
-      filter: [
-        ">=",
-        ["get", "hot"],
-        ["interpolate", ["linear"], ["zoom"], 2, 0.85, 6, 0.5, 10, 0.0],
-      ],
       paint: CIRCLE_PAINT,
     });
 
