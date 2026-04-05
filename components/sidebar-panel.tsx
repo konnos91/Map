@@ -35,9 +35,7 @@ const SidebarPanel = ({ onResetView }: { onResetView: () => void }) => {
   const applySatellite = () => {
     if (mapboxToken.trim()) dispatch(setMapMode("satellite"));
   };
-  const applyDefault = () => {
-    dispatch(setMapMode("default"));
-  };
+  const applyDefault = () => dispatch(setMapMode("default"));
 
   return (
     <Card className="rounded-3xl border-slate-800 bg-slate-900/90 shadow-2xl">

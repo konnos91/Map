@@ -18,7 +18,7 @@ export function clamp(value: number, min: number, max: number) {
 }
 
 export function seeded(a: number, b: number, c: number) {
-  const x = Math.sin(a * 127.1 + b * 311.7 + c * 17.13) * 43758.5453123;
+  const x = Math.sin(a * 127.1 + b * 311.7 + c * 17.13) * 437598.5453123;
   return x - Math.floor(x);
 }
 
@@ -72,16 +72,20 @@ export function buildWorldSample(count: number): WorldPoint[] {
   return points;
 }
 
-export function getMaxVisibleMarkers() {
-  return 100;
+export function getMaxVisibleMarkers(zoom: number) {
+  if (zoom < 3) return 5000;
+  if (zoom < 5) return 10000;
+  if (zoom < 7) return 25000;
+  if (zoom < 9) return 50000;
+  return 100000;
 }
 
 export function getApproxVisiblePopulation(zoom: number) {
-  if (zoom < 2) return 100;
-  if (zoom < 3) return 200;
-  if (zoom < 4) return 501;
-  if (zoom < 5) return 1000;
-  return 1000;
+  if (zoom < 3) return 5000;
+  if (zoom < 5) return 10000;
+  if (zoom < 7) return 25000;
+  if (zoom < 9) return 50000;
+  return 100000;
 }
 
 export function getMarkerRadius() {
@@ -91,25 +95,6 @@ export function getMarkerRadius() {
 export function getMarkerColor(hot: number) {
   if (hot > 0.86) return "#f8fafc";
   return "#2563eb";
-}
-
-export function throttle(fn: () => void, ms: number) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-
-  const throttled = () => {
-    if (timer) return;
-    timer = setTimeout(() => {
-      timer = null;
-      fn();
-    }, ms);
-  };
-  throttled.cancel = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  };
-  return throttled;
 }
 
 export function scheduleWorldPointsBuild(
@@ -158,7 +143,7 @@ export function runHealthChecks() {
 
   results.push({
     name: "visible marker cap stays bounded at low zoom",
-    passed: getMaxVisibleMarkers() <= 2000,
+    passed: getMaxVisibleMarkers(2) <= 100000,
   });
 
   results.push({

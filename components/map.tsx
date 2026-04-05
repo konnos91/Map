@@ -7,15 +7,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useAppDispatch, clearSelectedDoc } from "@/lib/store";
 import SidebarPanel from "@/components/sidebar-panel";
-import { useLeafletMap } from "@/components/use-leaflet-map";
+import { useMapLibreMap } from "@/components/useMapLibreMap";
 
 const RealMapPreview = () => {
   const dispatch = useAppDispatch();
-  const { containerRef, mapLoaded, selectedDoc, resetView } = useLeafletMap();
+  const { containerRef, mapLoaded, selectedDoc, resetView } = useMapLibreMap();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
@@ -40,9 +40,12 @@ const RealMapPreview = () => {
                 </div>
               </div>
               <div className="relative h-[760px] w-full">
-                <div ref={containerRef} className="absolute inset-0 z-0" />
                 <div
-                  className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-900 transition-opacity duration-700 pointer-events-none ${mapLoaded ? "opacity-0" : "opacity-100"}`}
+                  ref={containerRef}
+                  className="absolute inset-0 z-0 h-full w-full"
+                />
+                <div
+                  className={`absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-950/55 backdrop-blur-[1px] transition-opacity duration-700 pointer-events-none ${mapLoaded ? "opacity-0" : "opacity-100"}`}
                 >
                   <div className="h-8 w-8 rounded-full border-2 border-slate-600 border-t-blue-400 animate-spin" />
                   <span className="text-sm text-slate-400">Loading map…</span>
