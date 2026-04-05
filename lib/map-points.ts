@@ -100,7 +100,6 @@ export function ensureLayers(
       layout: {
         "text-field": "{point_count_abbreviated}",
         "text-size": 11,
-        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
       },
       paint: {
         "text-color": "#ffffff",
