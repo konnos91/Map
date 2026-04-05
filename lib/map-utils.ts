@@ -72,14 +72,6 @@ export function buildWorldSample(count: number): WorldPoint[] {
   return points;
 }
 
-export function getMaxVisibleMarkers(zoom: number) {
-  if (zoom < 3) return 5000;
-  if (zoom < 5) return 10000;
-  if (zoom < 7) return 25000;
-  if (zoom < 9) return 50000;
-  return 100000;
-}
-
 export function getApproxVisiblePopulation(zoom: number) {
   if (zoom < 3) return 5000;
   if (zoom < 5) return 10000;
@@ -97,16 +89,8 @@ export function getMarkerColor(hot: number) {
   return "#2563eb";
 }
 
-export function scheduleWorldPointsBuild(
-  onReady: (points: WorldPoint[]) => void
-) {
-  const run = () => onReady(buildWorldSample(SAMPLE_WORLD_POINTS));
-  if (typeof requestIdleCallback !== "undefined") {
-    const id = requestIdleCallback(run, { timeout: 1500 });
-    return () => cancelIdleCallback(id);
-  }
-  const t = setTimeout(run, 0);
-  return () => clearTimeout(t);
+export function buildWorldPointsSync(): WorldPoint[] {
+  return buildWorldSample(SAMPLE_WORLD_POINTS);
 }
 
 export function runHealthChecks() {
@@ -139,11 +123,6 @@ export function runHealthChecks() {
   results.push({
     name: "sample size is large enough to guarantee visible points at world zoom",
     passed: SAMPLE_WORLD_POINTS >= 10000,
-  });
-
-  results.push({
-    name: "visible marker cap stays bounded at low zoom",
-    passed: getMaxVisibleMarkers(2) <= 100000,
   });
 
   results.push({

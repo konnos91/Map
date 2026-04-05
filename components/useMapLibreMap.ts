@@ -1,14 +1,14 @@
 import { useEffect, useRef, useCallback } from "react";
+import maplibregl from "maplibre-gl";
 import type { SelectedDoc, WorldPoint } from "@/lib/map-constants";
 import { INITIAL_CENTER, INITIAL_ZOOM } from "@/lib/map-constants";
 import {
-  scheduleWorldPointsBuild,
+  buildWorldPointsSync,
   getApproxVisiblePopulation,
 } from "@/lib/map-utils";
 import { createMap, getStyle } from "@/lib/map-style";
 import {
   ensureLayers,
-  syncFilter,
   syncSelection,
   countRendered,
 } from "@/lib/map-points";
@@ -31,7 +31,7 @@ export function useMapLibreMap() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const pointsRef = useRef<WorldPoint[]>([]);
+  const pointsRef = useRef<WorldPoint[]>(buildWorldPointsSync());
   const selectedRef = useRef<SelectedDoc>(null);
   const modeRef = useRef({ mode: "default", token: "" });
 
@@ -64,26 +64,17 @@ export function useMapLibreMap() {
       loadPoints();
     });
 
-    map.on("zoomend", () => {
-      syncFilter(map);
-      syncMeta();
-    });
+    map.on("zoomend", syncMeta);
 
     map.on("moveend", throttledMeta);
 
     const stopFps = startFpsTracker();
-    const cancelBuild = scheduleWorldPointsBuild((pts) => {
-      pointsRef.current = pts;
-      loadPoints();
-    });
 
     return () => {
       stopFps();
-      cancelBuild();
       throttledMeta.cancel();
       map.remove();
       mapRef.current = null;
-      pointsRef.current = [];
       dispatch(setMapLoaded(false));
     };
   }, [dispatch]);
